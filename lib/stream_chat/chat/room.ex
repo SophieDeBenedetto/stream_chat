@@ -1,11 +1,12 @@
 defmodule StreamChat.Chat.Room do
   use Ecto.Schema
   import Ecto.Changeset
+  alias StreamChat.Chat.Message
 
   schema "rooms" do
     field :description, :string
     field :name, :string
-
+    has_many :messages, Message
     timestamps()
   end
 

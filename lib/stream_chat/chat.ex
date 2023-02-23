@@ -6,7 +6,8 @@ defmodule StreamChat.Chat do
   import Ecto.Query, warn: false
   alias StreamChat.Repo
 
-  alias StreamChat.Chat.Room
+  alias StreamChat.Chat.{Room, Message}
+  alias StreamChat.Chat.Message
 
   @doc """
   Returns the list of rooms.
@@ -35,7 +36,10 @@ defmodule StreamChat.Chat do
       ** (Ecto.NoResultsError)
 
   """
-  def get_room!(id), do: Repo.get!(Room, id)
+  def get_room!(id) do
+    Repo.get(Room, id)
+    |> Repo.preload(messages: Message.Query.preload_sender())
+  end
 
   @doc """
   Creates a room.
@@ -100,5 +104,11 @@ defmodule StreamChat.Chat do
   """
   def change_room(%Room{} = room, attrs \\ %{}) do
     Room.changeset(room, attrs)
+  end
+
+  def create_message(attrs \\ %{}) do
+    %Message{}
+    |> Message.changeset(attrs)
+    |> Repo.insert()
   end
 end

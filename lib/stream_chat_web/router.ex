@@ -70,7 +70,13 @@ defmodule StreamChatWeb.Router do
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
     end
 
-    live "/rooms/:id", RoomLive.Show
+
+    live_session :rooms,
+    on_mount: [{StreamChatWeb.UserAuth, :ensure_authenticated}],
+    layout: {StreamChatWeb.Layouts, :rooms} do
+      live "/rooms", RoomLive.Index, :index
+      live "/rooms/:id", RoomLive.Index, :show
+    end
   end
 
   scope "/", StreamChatWeb do
