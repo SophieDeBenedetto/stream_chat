@@ -6,7 +6,7 @@ defmodule StreamChatWeb.ChatLive.Room do
   def render(assigns) do
     ~H"""
     <div id={"room-#{@room.id}"}>
-      <.messages messages={@messages} />
+      <.list_messages messages={@messages} />
       <.live_component
         module={Message.Form}
         room_id={@room.id}
@@ -17,9 +17,9 @@ defmodule StreamChatWeb.ChatLive.Room do
     """
   end
 
-  def messages(assigns) do
+  def list_messages(assigns) do
     ~H"""
-    <div id="messages" phx-update="stream">
+    <div id="messages" phx-update="stream" class="overflow-scroll" style="height: calc(88vh - 10rem);">
       <.message_list :for={{dom_id, message} <- @messages}>
         <:message dom_id={dom_id} title={message.sender.email} created_at={message.inserted_at}>
           <%= message.content %>
