@@ -8,6 +8,7 @@ defmodule StreamChat.Chat do
 
   alias StreamChat.Chat.{Room, Message}
   alias StreamChat.Chat.Message
+  alias StreamChatWeb.Endpoint
 
   @doc """
   Returns the list of rooms.
@@ -38,7 +39,12 @@ defmodule StreamChat.Chat do
   """
   def get_room!(id) do
     Repo.get(Room, id)
-    |> Repo.preload(messages: Message.Query.preload_sender())
+  end
+
+  def messages_for(room_id) do
+    Message.Query.for_room(room_id)
+    |> Repo.all()
+    |> Repo.preload(:sender)
   end
 
   @doc """
@@ -106,9 +112,26 @@ defmodule StreamChat.Chat do
     Room.changeset(room, attrs)
   end
 
+  def change_message(%Message{} = message, attrs \\ %{}) do
+    Message.changeset(message, attrs)
+  end
+
   def create_message(attrs \\ %{}) do
     %Message{}
     |> Message.changeset(attrs)
     |> Repo.insert()
+    |> publish_message_created()
   end
+
+  def preload_message_sender(message) do
+    message
+    |> Repo.preload(:sender)
+  end
+
+  def publish_message_created({:ok, message} = result) do
+    Endpoint.broadcast("room:#{message.room_id}", "new_message", %{message: message})
+    result
+  end
+
+  def publish_message_created(result), do: result
 end

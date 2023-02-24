@@ -74,8 +74,8 @@ defmodule StreamChatWeb.Router do
     live_session :rooms,
     on_mount: [{StreamChatWeb.UserAuth, :ensure_authenticated}],
     layout: {StreamChatWeb.Layouts, :rooms} do
-      live "/rooms", RoomLive.Index, :index
-      live "/rooms/:id", RoomLive.Index, :show
+      live "/rooms", ChatLive.Root, :index
+      live "/rooms/:id", ChatLive.Root, :show
     end
   end
 
