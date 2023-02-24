@@ -26,5 +26,9 @@ alias StreamChat.Repo
 # end
 
 for _n <- 1..1_000_000 do
-  Chat.create_message(%{content: Faker.Lorem.sentence(), room_id: Enum.random([1,2]), sender_id: Enum.random([1,2, 3, 4, 5, 6, 7, 8, 9, 10])})
+  Chat.create_message(%{
+    content: Faker.Lorem.sentence(),
+    room_id: Enum.random([1, 2]),
+    sender_id: Enum.random([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  })
 end

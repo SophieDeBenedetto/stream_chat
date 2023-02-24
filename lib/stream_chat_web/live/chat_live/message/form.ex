@@ -6,11 +6,11 @@ defmodule StreamChatWeb.ChatLive.Message.Form do
   alias StreamChat.Chat.Message
 
   def update(assigns, socket) do
-    {:ok, socket
-      |> assign(assigns)
-      |> assign(:changeset, Chat.change_message(%Message{}))}
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:changeset, Chat.change_message(%Message{}))}
   end
-
 
   def render(assigns) do
     ~H"""
@@ -20,7 +20,8 @@ defmodule StreamChatWeb.ChatLive.Message.Form do
         for={@changeset}
         phx-submit="save"
         phx-change="update"
-        phx-target={@myself}>
+        phx-target={@myself}
+      >
         <.input field={{f, :content}} />
         <:actions>
           <.button>send</.button>
@@ -35,7 +36,12 @@ defmodule StreamChatWeb.ChatLive.Message.Form do
   end
 
   def handle_event("save", %{"message" => %{"content" => content}}, socket) do
-    Chat.create_message(%{content: content, room_id: socket.assigns.room_id, sender_id: socket.assigns.sender_id})
+    Chat.create_message(%{
+      content: content,
+      room_id: socket.assigns.room_id,
+      sender_id: socket.assigns.sender_id
+    })
+
     trigger_update_and_render(socket.assigns.room_id)
     {:noreply, socket}
   end

@@ -14,10 +14,12 @@ defmodule StreamChatWeb.ChatLive.Root do
 
   def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socket) do
     if connected?(socket), do: Endpoint.subscribe("room:#{id}")
-    {:noreply, socket
-      |> assign_rooms()
-      |> assign_active_room(id)
-      |> assign_active_room_messages()}
+
+    {:noreply,
+     socket
+     |> assign_rooms()
+     |> assign_active_room(id)
+     |> assign_active_room_messages()}
   end
 
   def assign_active_room_messages(socket) do
@@ -30,12 +32,13 @@ defmodule StreamChatWeb.ChatLive.Root do
   end
 
   def handle_info(%{event: "new_message", payload: %{message: message}}, socket) do
-    {:noreply, socket
-      |> insert_new_message(message)}
+    {:noreply,
+     socket
+     |> insert_new_message(message)}
   end
 
   def assign_rooms(socket) do
-    assign(socket, :rooms, Chat.list_rooms)
+    assign(socket, :rooms, Chat.list_rooms())
   end
 
   def assign_active_room(socket, id) do
