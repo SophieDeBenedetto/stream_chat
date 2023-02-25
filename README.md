@@ -17,3 +17,11 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
   * Docs: https://hexdocs.pm/phoenix
   * Forum: https://elixirforum.com/c/phoenix-forum
   * Source: https://github.com/phoenixframework/phoenix
+
+## TODO:
+* Show user typing
+* Add badge to room name when unread messages
+* Track awareness of message read/unread
+* Only scroll down for new messages if the message is from the current user
+  * In handle_info for new message from PubSub, if new message is from self, scroll down. If from someone else, do not scroll but add badge to side/bottom instead. Use same pattern as 'scrollToTop' data element from socket state for updated() scrollDown Hook
+* Refine JS interactions for infinite scroll back

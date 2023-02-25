@@ -27,8 +27,8 @@ defmodule StreamChatWeb.ChatLive.Room do
       phx-hook="ScrollDown"
       data-scrolled-to-top={@scrolled_to_top}
     >
-    <div id="infinite-scroll-marker" phx-hook="InfiniteScroll"></div>
-      <div id={dom_id} :for={{dom_id, message} <- @messages} class="mt-2">
+      <div id="infinite-scroll-marker" phx-hook="InfiniteScroll"></div>
+      <div :for={{dom_id, message} <- @messages} id={dom_id} class="mt-2">
         <.message_meta message={message} />
         <.message_content message={message} />
       </div>

@@ -33,15 +33,15 @@ defmodule StreamChatWeb.ChatLive.Root do
 
   def handle_event("load_more", _params, socket) do
     {:noreply,
-    socket
-    |> insert_previous_five_messages()
-    |> assign_scrolled_to_top("true")}
+     socket
+     |> insert_previous_five_messages()
+     |> assign_scrolled_to_top("true")}
   end
 
   def handle_event("unpin_scrollbar_from_top", _params, socket) do
     {:noreply,
-    socket
-    |> assign_scrolled_to_top("false")}
+     socket
+     |> assign_scrolled_to_top("false")}
   end
 
   def insert_new_message(socket, message) do
@@ -50,14 +50,19 @@ defmodule StreamChatWeb.ChatLive.Root do
   end
 
   def insert_previous_five_messages(socket) do
-    Enum.reduce(Chat.get_previous_n_messages(socket.assigns.oldest_message_id, 5), socket, fn message, socket ->
-      stream_insert(socket, :messages, Chat.preload_message_sender(message), at: 0)
-      |> assign(:oldest_message_id, message.id)
-    end)
+    Enum.reduce(
+      Chat.get_previous_n_messages(socket.assigns.oldest_message_id, 5),
+      socket,
+      fn message, socket ->
+        stream_insert(socket, :messages, Chat.preload_message_sender(message), at: 0)
+        |> assign(:oldest_message_id, message.id)
+      end
+    )
   end
 
   def assign_active_room_messages(socket) do
     messages = Chat.messages_for(socket.assigns.room.id)
+
     socket
     |> stream(:messages, messages)
     |> assign(:oldest_message_id, List.first(messages).id)
