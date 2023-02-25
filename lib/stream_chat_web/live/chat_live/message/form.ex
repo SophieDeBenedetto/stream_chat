@@ -9,7 +9,11 @@ defmodule StreamChatWeb.ChatLive.Message.Form do
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:changeset, Chat.change_message(%Message{}))}
+     |> assign_changeset}
+  end
+
+  def assign_changeset(socket) do
+    assign(socket, :changeset, Chat.change_message(%Message{}))
   end
 
   def render(assigns) do
@@ -42,11 +46,6 @@ defmodule StreamChatWeb.ChatLive.Message.Form do
       sender_id: socket.assigns.sender_id
     })
 
-    trigger_update_and_render(socket.assigns.room_id)
-    {:noreply, socket}
-  end
-
-  def trigger_update_and_render(room_id) do
-    send_update(__MODULE__, id: "room-#{room_id}-message-form")
+    {:noreply, assign_changeset(socket)}
   end
 end

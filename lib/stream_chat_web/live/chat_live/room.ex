@@ -19,7 +19,7 @@ defmodule StreamChatWeb.ChatLive.Room do
 
   def list_messages(assigns) do
     ~H"""
-    <div id="messages" phx-update="stream" class="overflow-scroll" style="height: calc(88vh - 10rem);">
+    <div id="messages" phx-update="stream" class="overflow-scroll" style="height: calc(88vh - 10rem)" phx-hook="ScrollDown">
       <.message_list :for={{dom_id, message} <- @messages}>
         <:message dom_id={dom_id} title={message.sender.email} created_at={message.inserted_at}>
           <%= message.content %>
