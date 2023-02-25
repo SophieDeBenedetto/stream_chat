@@ -134,4 +134,9 @@ defmodule StreamChat.Chat do
   end
 
   def publish_message_created(result), do: result
+
+  def get_previous_n_messages(id, n) do
+    Message.Query.previous_n(id, n)
+    |> Repo.all()
+  end
 end
