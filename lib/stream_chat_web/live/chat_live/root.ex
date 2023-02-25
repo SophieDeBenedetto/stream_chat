@@ -34,7 +34,7 @@ defmodule StreamChatWeb.ChatLive.Root do
   def handle_event("load_more", _params, socket) do
     {:noreply,
     socket
-    |> insert_previous_ten_messages()
+    |> insert_previous_five_messages()
     |> assign_scrolled_to_top("true")}
   end
 
@@ -49,11 +49,8 @@ defmodule StreamChatWeb.ChatLive.Root do
     |> stream_insert(:messages, Chat.preload_message_sender(message))
   end
 
-  def insert_previous_ten_messages(socket) do
-    # message = List.first(Chat.get_previous_n_messages(socket.assigns.oldest_message_id, 1))
-    # stream_insert(socket, :messages, Chat.preload_message_sender(message), at: 0)
-    # |> assign(:oldest_message_id, message.id)
-    Enum.reduce(Chat.get_previous_n_messages(socket.assigns.oldest_message_id, 10), socket, fn message, socket ->
+  def insert_previous_five_messages(socket) do
+    Enum.reduce(Chat.get_previous_n_messages(socket.assigns.oldest_message_id, 5), socket, fn message, socket ->
       stream_insert(socket, :messages, Chat.preload_message_sender(message), at: 0)
       |> assign(:oldest_message_id, message.id)
     end)
