@@ -47,6 +47,11 @@ defmodule StreamChat.Chat do
     |> Repo.preload(:sender)
   end
 
+  def last_user_message_for_room(room_id, user_id) do
+    Message.Query.last_user_message_for_room(room_id, user_id)
+    |> Repo.one()
+  end
+
   @doc """
   Creates a room.
 
@@ -138,5 +143,6 @@ defmodule StreamChat.Chat do
   def get_previous_n_messages(id, n) do
     Message.Query.previous_n(id, n)
     |> Repo.all()
+    |> Repo.preload(:sender)
   end
 end

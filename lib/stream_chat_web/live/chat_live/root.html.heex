@@ -7,4 +7,10 @@
     room={@room}
     scrolled_to_top={@scrolled_to_top}
   />
+<div>IS EDITING: <%= @is_editing_message%></div>
 </div>
+<.modal show={@is_editing_message} id="edit_message" on_confirm={JS.push("update_message")}>
+  EDIT MESSAGE
+  <:confirm>save</:confirm>
+  <:cancel>cancel</:cancel>
+</.modal>

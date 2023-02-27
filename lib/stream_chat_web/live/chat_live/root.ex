@@ -8,7 +8,8 @@ defmodule StreamChatWeb.ChatLive.Root do
     {:ok,
      socket
      |> assign_active_room()
-     |> assign_scrolled_to_top("false")}
+     |> assign_scrolled_to_top
+     |> assign_is_editing_message}
   end
 
   def handle_params(_params, _uri, %{assigns: %{live_action: :index}} = socket) do
@@ -32,9 +33,11 @@ defmodule StreamChatWeb.ChatLive.Root do
   end
 
   def handle_event("load_more", _params, socket) do
+    messages = Chat.get_previous_n_messages(socket.assigns.oldest_message_id, 5)
     {:noreply,
      socket
-     |> insert_previous_five_messages()
+     |> stream_batch_insert(:messages, messages, at: 0)
+     |> assign_oldest_message_id(List.last(messages))
      |> assign_scrolled_to_top("true")}
   end
 
@@ -44,20 +47,20 @@ defmodule StreamChatWeb.ChatLive.Root do
      |> assign_scrolled_to_top("false")}
   end
 
+  def handle_event("edit_message", %{"key" => "ArrowUp"}, socket) do
+    {:noreply,
+     socket
+     |> assign_is_editing_message(true)
+     |> assign_last_message_from_user()}
+  end
+
+  def handle_event("edit_message", %{"key" => _}, socket) do
+    {:noreply, socket}
+  end
+
   def insert_new_message(socket, message) do
     socket
     |> stream_insert(:messages, Chat.preload_message_sender(message))
-  end
-
-  def insert_previous_five_messages(socket) do
-    Enum.reduce(
-      Chat.get_previous_n_messages(socket.assigns.oldest_message_id, 5),
-      socket,
-      fn message, socket ->
-        stream_insert(socket, :messages, Chat.preload_message_sender(message), at: 0)
-        |> assign(:oldest_message_id, message.id)
-      end
-    )
   end
 
   def assign_active_room_messages(socket) do
@@ -80,7 +83,19 @@ defmodule StreamChatWeb.ChatLive.Root do
     assign(socket, :room, nil)
   end
 
-  def assign_scrolled_to_top(socket, scrolled_to_top) do
+  def assign_scrolled_to_top(socket, scrolled_to_top \\ "false") do
     assign(socket, :scrolled_to_top, scrolled_to_top)
+  end
+
+  def assign_oldest_message_id(socket, message) do
+    assign(socket, :oldest_message_id, message.id)
+  end
+
+  def assign_is_editing_message(socket, is_editing \\ nil) do
+    assign(socket, :is_editing_message, is_editing)
+  end
+
+  def assign_last_message_from_user(%{assigns: %{room: room, current_user: current_user}} = socket) do
+    assign(socket, :message, Chat.last_user_message_for_room(room.id, current_user.id))
   end
 end
