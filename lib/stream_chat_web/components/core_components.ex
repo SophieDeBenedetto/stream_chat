@@ -46,7 +46,6 @@ defmodule StreamChatWeb.CoreComponents do
   slot :cancel
 
   def modal(assigns) do
-    IO.inspect assigns.show
     ~H"""
     <div id={@id} phx-mounted={@show && show_modal(@id)} class="relative z-50 hidden">
       <div id={"#{@id}-bg"} class="fixed inset-0 bg-zinc-50/90 transition-opacity" aria-hidden="true" />

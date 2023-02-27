@@ -57,7 +57,7 @@ defmodule StreamChatWeb do
 
       def stream_batch_insert(socket, key, items, opts \\ %{}) do
         items
-        |> Enum.reduce(socket, fn (item, socket) ->
+        |> Enum.reduce(socket, fn item, socket ->
           stream_insert(socket, key, item, opts)
         end)
       end

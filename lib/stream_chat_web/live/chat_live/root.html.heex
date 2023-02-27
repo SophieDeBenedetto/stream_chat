@@ -8,8 +8,4 @@
     scrolled_to_top={@scrolled_to_top}
   />
 </div>
-<.modal id="edit_message" on_confirm={JS.push("update_message")}>
-  EDIT MESSAGE <div><%= @message.content %></div>
-  <:confirm>save</:confirm>
-  <:cancel>cancel</:cancel>
-</.modal>
+<.live_component module={Message.EditForm} message={@message} id="message-edit-form" />
