@@ -9,7 +9,7 @@
   />
 </div>
 <.modal id="edit_message" on_confirm={JS.push("update_message")}>
-  EDIT MESSAGE
+  EDIT MESSAGE <div><%= @message.content %></div>
   <:confirm>save</:confirm>
   <:cancel>cancel</:cancel>
 </.modal>
