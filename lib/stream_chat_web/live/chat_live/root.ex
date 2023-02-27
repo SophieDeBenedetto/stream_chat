@@ -8,8 +8,7 @@ defmodule StreamChatWeb.ChatLive.Root do
     {:ok,
      socket
      |> assign_active_room()
-     |> assign_scrolled_to_top
-     |> assign_is_editing_message}
+     |> assign_scrolled_to_top()}
   end
 
   def handle_params(_params, _uri, %{assigns: %{live_action: :index}} = socket) do
@@ -23,13 +22,15 @@ defmodule StreamChatWeb.ChatLive.Root do
      socket
      |> assign_rooms()
      |> assign_active_room(id)
-     |> assign_active_room_messages()}
+     |> assign_active_room_messages()
+     |> assign_last_user_message()}
   end
 
   def handle_info(%{event: "new_message", payload: %{message: message}}, socket) do
     {:noreply,
      socket
-     |> insert_new_message(message)}
+     |> insert_new_message(message)
+     |> assign_last_user_message(message)}
   end
 
   def handle_event("load_more", _params, socket) do
@@ -45,13 +46,6 @@ defmodule StreamChatWeb.ChatLive.Root do
     {:noreply,
      socket
      |> assign_scrolled_to_top("false")}
-  end
-
-  def handle_event("edit_message", %{"key" => "ArrowUp"}, socket) do
-    {:noreply,
-     socket
-     |> assign_is_editing_message(true)
-     |> assign_last_message_from_user()}
   end
 
   def handle_event("edit_message", %{"key" => _}, socket) do
@@ -95,7 +89,15 @@ defmodule StreamChatWeb.ChatLive.Root do
     assign(socket, :is_editing_message, is_editing)
   end
 
-  def assign_last_message_from_user(%{assigns: %{room: room, current_user: current_user}} = socket) do
+  def assign_last_user_message(%{assigns: %{current_user: current_user}} = socket, message) when current_user.id == message.sender_id do
+    assign(socket, :message, message)
+  end
+
+  def assign_last_user_message(socket, _message) do
+    socket
+  end
+
+  def assign_last_user_message(%{assigns: %{room: room, current_user: current_user}} = socket) do
     assign(socket, :message, Chat.last_user_message_for_room(room.id, current_user.id))
   end
 end

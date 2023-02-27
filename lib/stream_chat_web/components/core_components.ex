@@ -49,7 +49,6 @@ defmodule StreamChatWeb.CoreComponents do
     IO.inspect assigns.show
     ~H"""
     <div id={@id} phx-mounted={@show && show_modal(@id)} class="relative z-50 hidden">
-      <p :if={@show}>HI</p>
       <div id={"#{@id}-bg"} class="fixed inset-0 bg-zinc-50/90 transition-opacity" aria-hidden="true" />
       <div
         class="fixed inset-0 overflow-y-auto"

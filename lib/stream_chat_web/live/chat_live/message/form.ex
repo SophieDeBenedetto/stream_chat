@@ -26,7 +26,7 @@ defmodule StreamChatWeb.ChatLive.Message.Form do
         phx-change="update"
         phx-target={@myself}
       >
-        <.input autocomplete="off" phx-keydown={"edit_message"} phx-key="ArrowUp" phx-focus="unpin_scrollbar_from_top" field={{f, :content}} />
+        <.input autocomplete="off" phx-keydown={show_modal("edit_message")} phx-key="ArrowUp" phx-focus="unpin_scrollbar_from_top" field={{f, :content}} />
         <:actions>
           <.button>send</.button>
         </:actions>
