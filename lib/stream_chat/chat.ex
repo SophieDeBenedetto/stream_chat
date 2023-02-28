@@ -41,6 +41,10 @@ defmodule StreamChat.Chat do
     Repo.get(Room, id)
   end
 
+  def get_message!(id) do
+    Repo.get(Message, id)
+  end
+
   def messages_for(room_id) do
     Message.Query.for_room(room_id)
     |> Repo.all()
@@ -102,6 +106,10 @@ defmodule StreamChat.Chat do
   """
   def delete_room(%Room{} = room) do
     Repo.delete(room)
+  end
+
+  def delete_message(%Message{} = message) do
+    Repo.delete(message)
   end
 
   @doc """

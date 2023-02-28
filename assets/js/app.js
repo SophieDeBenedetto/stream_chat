@@ -23,10 +23,12 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import ScrollDown from "./scroll"
 import InfiniteScroll from "./infiniteScroll"
+import Hover from "./hover"
 
 let Hooks = {}
 Hooks.ScrollDown = ScrollDown
 Hooks.InfiniteScroll = InfiniteScroll
+Hooks.Hover = Hover
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {hooks: Hooks, params: {_csrf_token: csrfToken}})
