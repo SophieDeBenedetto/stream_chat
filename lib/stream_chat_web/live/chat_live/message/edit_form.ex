@@ -18,7 +18,6 @@ defmodule StreamChatWeb.ChatLive.Message.EditForm do
           for={@changeset}
           phx-submit={JS.push("update") |> hide_modal("edit_message")}
           phx-target={@myself}
-          id="message_edit"
         >
           <.input autocomplete="off" field={{f, :content}} />
           <:actions>

@@ -7,13 +7,10 @@ defmodule StreamChatWeb.ChatLive.Root do
   def mount(_params, _session, socket) do
     {:ok,
      socket
+     |> assign_rooms()
      |> assign_active_room()
      |> assign_scrolled_to_top()
      |> assign_last_user_message()}
-  end
-
-  def handle_params(_params, _uri, %{assigns: %{live_action: :index}} = socket) do
-    {:noreply, assign_rooms(socket)}
   end
 
   def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socket) do
@@ -21,11 +18,12 @@ defmodule StreamChatWeb.ChatLive.Root do
 
     {:noreply,
      socket
-     |> assign_rooms()
      |> assign_active_room(id)
      |> assign_active_room_messages()
      |> assign_last_user_message()}
   end
+
+  def handle_params(_params, _uri, socket), do: {:noreply, socket}
 
   def handle_info(%{event: "new_message", payload: %{message: message}}, socket) do
     {:noreply,
@@ -76,7 +74,7 @@ defmodule StreamChatWeb.ChatLive.Root do
   end
 
   def assign_active_room_messages(socket) do
-    messages = Chat.messages_for(socket.assigns.room.id)
+    messages = Chat.last_ten_messages_for(socket.assigns.room.id)
 
     socket
     |> stream(:messages, messages)
@@ -121,12 +119,16 @@ defmodule StreamChatWeb.ChatLive.Root do
   end
 
   def assign_last_user_message(%{assigns: %{room: room, current_user: current_user}} = socket) do
-    assign(socket, :message, Chat.last_user_message_for_room(room.id, current_user.id))
+    assign(socket, :message, get_last_user_message_for_room(room.id, current_user.id))
   end
 
   def delete_message(socket, message_id) do
     message = Chat.get_message!(message_id)
     Chat.delete_message(message)
     stream_delete(socket, :messages, message)
+  end
+
+  def get_last_user_message_for_room(room_id, current_user_id) do
+    Chat.last_user_message_for_room(room_id, current_user_id) || %Chat.Message{}
   end
 end

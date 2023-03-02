@@ -1,5 +1,5 @@
 defmodule StreamChatWeb.ChatLive.Room do
-  use StreamChatWeb, :html
+  use Phoenix.Component
   alias StreamChatWeb.ChatLive.{Messages, Message}
 
   def show(assigns) do

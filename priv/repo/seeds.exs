@@ -16,16 +16,16 @@ alias StreamChat.Chat
 alias StreamChat.Accounts
 alias StreamChat.Repo
 
-# Repo.insert!(%Room{name: "weekend-plans", description: "Let's plan for the weekend!"})
-# Repo.insert!(%Room{name: "sre-team", description: "The SRE team's channel"})
+Repo.insert!(%Room{name: "weekend-plans", description: "Let's plan for the weekend!"})
+Repo.insert!(%Room{name: "sre-team", description: "The SRE team's channel"})
 
-# for _n <- 1..10 do
-#   name = Faker.Person.first_name()
-#   email = "#{String.downcase(name)}@streamchat.io"
-#   Accounts.register_user(%{email: email, password: "passw0rd!passw0rd!"})
-# end
+for _n <- 1..10 do
+  name = Faker.Person.first_name()
+  email = "#{String.downcase(name)}@streamchat.io"
+  Accounts.register_user(%{email: email, password: "passw0rd!passw0rd!"})
+end
 
-for _n <- 1..1_000_000 do
+for _n <- 1..100 do
   Chat.create_message(%{
     content: Faker.Lorem.sentence(),
     room_id: Enum.random([1, 2]),

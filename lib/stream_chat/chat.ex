@@ -45,7 +45,7 @@ defmodule StreamChat.Chat do
     Repo.get(Message, id)
   end
 
-  def messages_for(room_id) do
+  def last_ten_messages_for(room_id) do
     Message.Query.for_room(room_id)
     |> Repo.all()
     |> Repo.preload(:sender)
