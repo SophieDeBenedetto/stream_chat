@@ -1,7 +1,6 @@
 defmodule StreamChatWeb.ChatLive.Message.Form do
   use StreamChatWeb, :live_component
   import StreamChatWeb.CoreComponents
-  alias StreamChatWeb.ChatLive.Message
   alias StreamChat.Chat
   alias StreamChat.Chat.Message
 
