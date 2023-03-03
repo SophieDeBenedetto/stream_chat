@@ -41,20 +41,7 @@ defmodule StreamChatWeb.ChatLive.Messages do
         <dt class="w-1/8 flex-none text-[0.9rem] leading-8 text-zinc-500" style="font-weight: 900">
           <%= @message.sender.email %>
           <span style="font-weight: 300">[<%= @message.inserted_at %>]</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="red"
-            class="w-6 h-6 float-right pl-1 mt-1"
-            id={"message-#{@message.id}-buttons"}
-            style="display:none"
-            phx-click="delete_message"
-            phx-value-message_id={@message.id}
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <.delete_icon id={"message-#{@message.id}-buttons"} phx_click="delete_message" value={@message.id} />
         </dt>
       </div>
     </dl>

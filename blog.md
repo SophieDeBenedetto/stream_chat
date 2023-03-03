@@ -632,7 +632,7 @@ def publish_message_created({:ok, message} = result) do
 end
 ```
 
-Now, we need our `ChatLive.Root` live view to subscribe to the correct PubSub topic for the current room. We'll do this in the `handle_params` function that runs when the live action is show:
+Now, we need our `ChatLive.Root` live view to subscribe to the correct PubSub topic for the current room. We'll do this in the `handle_params` function that runs when the live action is `:show`:
 
 ```elixir
 def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socket) do
@@ -657,7 +657,7 @@ def insert_new_message(socket, message) do
 end
 ```
 
-This time around, we call `stream_insert` with no additional options. In this case, the resulting LiveStream struct will look something like this:
+This time around, we call `stream_insert` with no additional options. In this case, the resulting LiveStream struct in socket assigns will look something like this:
 
 ```elixir
 streams: %{
@@ -686,9 +686,79 @@ That's it for our new message feature. Once again, streams did the heavy lifting
 
 ## Update an Existing Message with `stream_insert`
 
+The edit message form lives in the `ChatLive.Message.EditForm` live component, which is contained in a modal that we show or hide based on user interactions. We won't dive into that code here, since we want to keep our attention focused on the streams code we need to write. You can check out the completed code [here]() to take a closer look at the form rendering functionality, which is backed by function components and JS commands.
+
+For now, all you need to know is that the edit message form implements an event handler for the `"save"` action. That event handler calls `Chat.update message` which emits an `"updated_message"` event over PubSub just like we did when we created a new message. We'll implement a `handle_info` for this event in the `ChatLive.Root` live view, since that live view is responsible for managing the `@streams.messages` assigns. Let's do that now.
+
+```elixir
+def handle_info(%{event: "updated_message", payload: %{message: message}}, socket) do
+  {:noreply,
+    socket
+    |> insert_updated_message(message)}
+end
+
+def insert_updated_message(socket, message) do
+  socket
+  |> stream_insert(:messages, Chat.preload_message_sender(message), at: -1)
+end
+```
+
+Here, we call `stream_insert` yet again, this time with the updated message and the `at: -1` option. Since we're passing a message that the stream is already tracking on the page, LiveView will know to update the existing message item in the stream. The `at: -1` option tells LiveView to update the item at its current stream location, rather than appending it to the end of the list. Now, the page with re-render and display the updated in message in place.
+
+Before we wrap up, we need to build out the message delete feature. Let's do that now.
+
 ## Delete a Message with `stream_delete`
 
+We render a delete icon for each message when the message is hovered over, like this:
+
+![](message delete button)
+
+When the user clicks that button, we send a `"delete_message"` event to the live view. Let's handle that event now by deleting the message from the stream.
+
+```elixir
+def handle_event("delete_message", %{"item_id" => message_id}, socket) do
+  {:noreply, delete_message(socket, message_id)}
+end
+
+def delete_message(socket, message_id) do
+  message = Chat.get_message!(message_id)
+  Chat.delete_message(message)
+  stream_delete(socket, :messages, message)
+end
+```
+
+We query for the message to be deleted, execute a cal to delete that message from the database, and then tell the stream to delete the message its list. The call to `steam_delete` returns a socket with an assigns that looks something like this:
+
+```elixir
+streams: %{
+  __changed__: MapSet.new([:messages]),
+  messages: %Phoenix.LiveView.LiveStream{
+    name: :messages,
+    dom_id: #Function<3.113057034/1 in Phoenix.LiveView.LiveStream.new/3>,
+    inserts: [],
+    deletes: ["messages-20"]
+  }
+}
+```
+
+Notice that `:inserts` is empty, but `:deletes` contains a list with the DOM id of the item to be deleted. This instructs LiveView to remove the item with that DOM id from the rendered list of `@streams.messages`. If you pass a struct to `stream_delete`, LiveView will compute the DOM id to be deleted. Alternatively, if you don't have access to that struct or don't want to query for it, you can give `stream_delete` a third argument of the DOM id directly, either by re-computing it yourself or invoking the live stream's `dom_id/2` function stored in `@streams.messages.dom_id`.
+
+That's all we need to do to support our delete message functionality. Once we tell LiveView that there is a stream item to delete, the framework yet again takes care of the rest.
+
+Okay, we've covered a lot of ground. Let's wrap up.
+
+## Wrap Up
+
+* Benefits of streams
+* recap of how easy they are to work with
+* recap of some of the "under the hood" glances we took to drive home that we understand how they work and they're not mysterious anymore
+* highlight that we omitted a lot of functionality, especially JS functionality. Dive deeper into the full feature set in the codebase.
+* Where will streams go next? I want a batch_insert.
+
 Code TODO:
-* clean starting branch for this tutorial
-* complete branch for this tutorial without JS bells and whistles
+* clean starting branch for this tutorial -> starting state should have edit form and delete buttons on hover, but not handle_info to do stream insert/delete.
+* complete branch for this tutorial without scroll down JS bells and whistles, but with infinite scroll back, modal JS, hover JS.
 * complete branch _with_ JS bells and whistles
+* Link to code appropriately throughout
+* Add images and videos
+* Add demo at the top

@@ -12,7 +12,7 @@ defmodule StreamChatWeb.ChatLive.Message.EditForm do
   def render(assigns) do
     ~H"""
     <div>
-      <.modal id="edit_message" on_confirm={JS.push("update_message") |> hide_modal("edit_message")}>
+      <.modal id="edit_message">
         <.simple_form
           :let={f}
           for={@changeset}

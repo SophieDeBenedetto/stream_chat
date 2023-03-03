@@ -59,7 +59,7 @@ defmodule StreamChatWeb.ChatLive.Root do
     {:noreply, socket}
   end
 
-  def handle_event("delete_message", %{"message_id" => message_id}, socket) do
+  def handle_event("delete_message", %{"item_id" => message_id}, socket) do
     {:noreply, delete_message(socket, message_id)}
   end
 
