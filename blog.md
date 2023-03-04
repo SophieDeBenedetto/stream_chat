@@ -1,12 +1,12 @@
 # Building a Chat App with LiveView Streams
 
-In this post, we'll build out a LiveView chatroom app with the help of LiveView's new LiveStream feature. You'll see how streams seamlessly integrate with LiveView JS and other LiveView features to power interactive and efficient UIs. Along the way, we'll look at how streams work under the hood. When we're done, you'll have exercised the full functionality of LiveStream and you'll understand how streams work at a deep level.
+In this post, we'll build out a LiveView chatroom app with the help of LiveView's new LiveStream feature. You'll see how streams seamlessly integrate into your existing live views to power interactive and efficient UIs. Along the way, we'll look at how streams work under the hood. When we're done, you'll have exercised the full functionality of LiveStream and you'll understand how streams work at a deep level.
 
 ## What are LiveView Streams?
 
 LiveView 0.18.16 ships with the new streams functionality for managing large collections of data client-side, without having to store anything in the LiveView socket. Chris McCord tells us more about this feature and the problem it's designed to solve in [this excellent post](https://fly.io/phoenix-files/phoenix-dev-blog-streams/).
 
-For the past few years, a question I would often hear from devs interested in LiveView was: "What about large sets of data?" Users who needed to display and manage long lists of data had to store that data on the server, or else work with the `phx-update="append"` feature. Storing large collections server-side can impact performance, while the `phx-update="append"` feature had its own drawbacks. But, as is so often the case with LiveView over the course of its development, the framework has come to provide a better solution for this commonly expressed concern. Now, you can use streams to efficiently manage large datasets in your live views by detaching that data from the socket and letting the client store it instead of the server.
+For the past few years, a question I would often hear from developers interested in LiveView was: "What about large datasets?" Users who needed to display and manage long lists of data had to store that data on the server, or else work with the `phx-update="append"` feature. Storing large collections server-side can impact performance, while the `phx-update="append"` feature had its own drawbacks. But, as is so often the case with LiveView over the course of its development, the framework has come to provide a better solution for this commonly expressed concern. Now, you can use streams to efficiently manage large datasets in your live views by detaching that data from the socket and letting the client store it instead of the server.
 
 LiveView exposes an elegant and users-friendly API for storing data in a client-side stream and allowing your app's users to interact with that data by adding, updating, and deleting items in the stream. We'll explore this behavior as we build a real-time chat feature into an existing chatroom-style LiveView application. Our chat will even use streams to support an infinite scroll back feature that allows users to view their chat history. Let's get started.
 
@@ -18,13 +18,13 @@ For this project, we have a basic LiveView application set up with the following
 * A `Message` belongs to a room and a sender. A sender is a user.
 * A `User` has many messages.
 
-We also have a `Chat` context that exposes the CRUD functionality for rooms and messages. All of this backs the main live view of the application, `StreamChatWeb.ChatLive.Root`. This live view is mapped to the `/rooms` and `/rooms/:id` live routes and this is where we'll be building out our stream-backed chatting feature. You can find the starting code for this project [here](https://github.com/SophieDeBenedetto/stream_chat), including a seed file that will get you started with some chat rooms, users, and messages. If you'd like to follow along step-by-step with this post, clone down the repo at the `starting-state` branch. Or, you can check out the complete project [here]().
+We also have a `Chat` context that exposes the CRUD functionality for rooms and messages. All of this backs the main live view of the application, `StreamChatWeb.ChatLive.Root`. This live view is mapped to the `/rooms` and `/rooms/:id` live routes and this is where we'll be building out our stream-backed chatting feature. You can find the starting code for this project [here](https://github.com/SophieDeBenedetto/stream_chat), including a seed file that will get you started with some chat rooms, users, and messages. If you'd like to follow along step-by-step with this post, clone down the repo at the `starting-state` branch. Or, you can check out the completed project [here]().
 
 Let's assume we've built out the entities described here, leaving us with this basic live view page:
 
 ![](rooms)
 
-A user can navigate to `/rooms/:id` and see the sidebar that lists the available chatrooms, with the current chatroom highlighted. But, we're not displaying the messages for that room yet, nor do we have a form through which the user can submit a new message. This is where our stream functionality comes in so this is where we'll pick up with our coding. Let's go.
+A user can navigate to `/rooms/:id` and see the sidebar that lists the available chatrooms, with the current chatroom highlighted. But, we're not displaying the messages for that room yet, nor do we have a form through which the user can submit a new message. This is where our stream functionality comes in so this is where we'll pick up with our coding. Let's get started.
 
 ## List Messages with Streams
 
@@ -32,7 +32,7 @@ First up, we want to render a list of messages in each chat room. Here's the UI 
 
 ![](room-show)
 
-We'll focus on the messages list first, and build out the form for a new message next. We'll use a stream to store the most recent ten messages for the room and we'll render the contents of that stream in a HEEx template. Let's start by teaching the `ChatLive.Root` live view to query for the messages and put them in a stream when the `/rooms/:id` route is requested.
+We'll use a stream to store the most recent ten messages for the room and we'll render the contents of that stream in a HEEx template. Let's start by teaching the `ChatLive.Root` live view to query for the messages and put them in a stream when the `/rooms/:id` route is requested.
 
 ### Initialize the Stream
 
@@ -47,9 +47,7 @@ live_session :rooms,
 end
 ```
 
-There are a few things to note here. First, the `/rooms` and `/rooms/:id` routes live in a shared live session that applies an authentication callback and a shared layout. The `StreamChatWeb.UserAuth.ensure_authenticated` callback was generated for us by the [Phoenix Auth generator](https://hexdocs.pm/phoenix/mix_phx_gen_auth.html). It ensures that only logged in users can see these routes and it adds the `:current_user` key to the socket of any live views that back the routes in this live session. So, we know that the `ChatLive.Root` live view will have a socket with a `:current_user` available for free, and we don't have to write any additional code in that live view's mount function to query for and set the current user.
-
-Next, note that both the `/rooms` and `/rooms/:id` routes map to the same live view, `ChatLive.Root`. The `/rooms/:id` route is defined with a live action of `:show` in the socket assigns. So, we'll define a `handle_params/3` callback that will run when the live action assignment is set to `:show`. We'll use this callback to fetch the list of messages and store them in the stream, like this:
+Note that both the `/rooms` and `/rooms/:id` routes map to the same live view, `ChatLive.Root`. The `/rooms/:id` route is defined with a live action of `:show` in the socket assigns. So, we'll define a `handle_params/3` callback that will run when the live action assignment is set to `:show`. We'll use this callback to fetch the list of messages for the current room and store them in the stream, like this:
 
 ```elixir
 def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socket) do
@@ -70,9 +68,9 @@ def assign_active_room_messages(%{assigns: %{room: room}} = socket) do
 end
 ```
 
-First, we use a single-purpose reducer function to assign the room with the given ID to the socket. Then, we pass that updated socket to another reducer function, `assign_active_room_messages/1`. That reducer pulls the room out of socket assigns and uses it to fetch the last ten messages. Finally, we create a stream for `:messages` with a value of this list of messages. These single-purpose reducer functions that take in a socket and annotate it with one additional key provide us with clean, re-usable LiveView code. They help us build narrative pipelines and can be re-used in other LiveView callbacks and event handlers. If you check out the full code for this live view [here](), you'll see that we implement an additional function head for the `assign_active_room` reducer and re-use it in the `mount/3` function.
+First, we use a single-purpose reducer function to assign the room with the given ID to the socket. Then, we pass that updated socket to another reducer function, `assign_active_room_messages/1`. That reducer pulls the room out of socket assigns and uses it to fetch the last ten messages. Finally, we create a stream for `:messages` with a value of this list of messages.
 
-Okay, let's dive a bit deeper into streams and take a closer look at what happens when we call `stream(socket, :messages, Chat.last_ten_messages_for_room(room.id))`. Go ahead and pipe the updated socket into an `IO.inspect` like this:
+Let's dive a bit deeper into streams and take a closer look at what happens when we call `stream(socket, :messages, Chat.last_ten_messages_for_room(room.id))`. Go ahead and pipe the updated socket into an `IO.inspect` like this:
 
 ```elixir
 def assign_active_room_messages(%{assigns: %{room: room}} = socket) do
@@ -81,7 +79,7 @@ def assign_active_room_messages(%{assigns: %{room: room}} = socket) do
 end
 ```
 
-Let the live view reload and you should see the socket inspected into the terminal. Looking closing at the `assigns` key, you'll see something like this:
+Let the live view reload and you should see the socket inspected into the terminal. Looking closely at the `assigns` key, you'll see something like this:
 
 ```elixir
 streams: %{
@@ -209,10 +207,13 @@ defmodule StreamChatWeb.ChatLive.Messages do
 end
 ```
 
-This is where the magic happens. We create a container div with a unique id of `"messages"` and a `phx-update="stream"` attribute. Both of these attributes are required in order for LiveView streams to be rendered and managed correctly. Then, we iterate over the `@messages` assignment, which we passed in all the way from the `root.html.heex` template's call to `@streams.messages`. At this point, `@messages` is set equal to the `Phoenix.LiveView.LiveStream` struct. This struct is enumerable such that when we iterate over it, it will yield tuples describing each item in the `:inserts` key. The first element of the tuple is the item's DOM id and the second element is the message struct itself.
+This is where the magic happens. We create a container div with a unique id of `"messages"` and a `phx-update="stream"` attribute. Both of these attributes are required in order for LiveView streams to be rendered and managed correctly. Then, we iterate over the `@messages` assignment, which we passed in all the way from the `root.html.heex` template's call to `@streams.messages`. At this point, `@messages` is set equal to the `Phoenix.LiveView.LiveStream` struct. This struct is enumerable such that when we iterate over it, it will yield tuples describing each item in the `:inserts` key. The first element of the tuple is the item's DOM id and the second element is the message struct itself. LiveView uses each item's DOM id to manage stream items on the page. More on that in a bit.
 
-[**Aside: How LiveStream Implements Iteration**]
-Let's take a deeper dive into how the LiveStream struct implements the enumeration protocol that let's us iterate over it and yield the tuples described above. LiveStream implements the `Enumerable` protocol [here](https://github.com/phoenixframework/phoenix_live_view/blob/v0.18.16/lib/phoenix_live_view/live_stream.ex#L55), along with a `reduce/3` function that looks like this:
+[**Deep Dive: How LiveStream Implements Iteration**]
+
+_Keep reading if you want a closer look at how LiveStream implements enumeration. Or, skip this section to continue building the chat feature and return here later._
+
+The LiveStream struct implements the `Enumerable` protocol [here](https://github.com/phoenixframework/phoenix_live_view/blob/v0.18.16/lib/phoenix_live_view/live_stream.ex#L55) which let's us iterate over it and yield the tuples described above. Here's a look at one of protocol's `reduce` functions:
 
 ```elixir
 def reduce(%LiveStream{inserts: inserts}, acc, fun) do
@@ -220,7 +221,7 @@ def reduce(%LiveStream{inserts: inserts}, acc, fun) do
 end
 ```
 
-You can see that when `reduce` is called, it pattern matches the _inserts_ out of the function head and passes that list into the `do_reduce/3` function call. The `:inserts` key of the stream struct will looks something like this:
+You can see that when `reduce` is called, it pattern matches the _inserts_ out of the function head and passes that list into `do_reduce/3`. The `:inserts` key of the stream struct looks something like this:
 
 ```elixir
 [
@@ -248,7 +249,7 @@ You can see that when `reduce` is called, it pattern matches the _inserts_ out o
 ]
 ```
 
-It is a list of tuples, where the first element is the DOM id, the second element is an instruction to the LiveView client regarding where to position the item in the list (we don't care about that right now), and the third element is the item itself.
+It is a list of three-tuples, where the first element is the DOM id, the second element is an instruction to the LiveView client regarding where to position the item in the list (we don't care about that right now), and the third element is the item itself.
 
 Here's a simplified look at the version of the `do_reduce/3` function that does the heavy lifting:
 
@@ -260,9 +261,9 @@ end
 
 The function ignores the `_at` element in the tuple, and collects new tuples composed of `{dom_id, item}`. So, when we iterate of a LiveStream struct with a `for` comprehension, it will yield these tuples.
 
-[**/Aside**]
+[**/Deep Dive**]
 
-Go ahead and add this code to the `list/1` function and then hop on over to your terminal:
+Let's inspect this iteration more closely. Go ahead and add this code to the `list_messages/1` function and then hop on over to your terminal:
 
 ```elixir
 def list_messages(assigns) do
@@ -302,9 +303,12 @@ You should see something like this:
  # ...
 ```
 
-The DOM id of each element is computed by interpolating the name of the stream, in our case `"messages"`, along with the ID of the item. So, we get a DOM id of `"messages-5"` and so on.
+You can see that each tuple has a first element of the DOM id and a second element of the message itself. The DOM id of each element is computed by interpolating the name of the stream, in our case `"messages"`, along with the ID of the item. So, we get a DOM id of `"messages-5"` and so on.
 
-**[Aside] How LiveView computes the stream item DOM id:**
+**[Deep Dive] How LiveView computes the stream item DOM id:**
+
+_Keep reading to take a deep dive into how LiveView computes the DOM id. Or, skip this section to continue   building our feature and return to it later_.
+
 When you call `stream(socket, :messages, message_list)`, LiveView initializes a new LiveStream struct with the `Phoenix.LiveView.LiveStream.new/3` function. That function assigns the struct's `:dom_id` attribute to either a function you optionally provide to `stream/4`, or to the default DOM id function. Here's a peak at the source code:
 
 ```elixir
@@ -344,11 +348,11 @@ items_list = for item <- items, do: {dom_id.(item), -1, item}
 
 For each item in the list, this iteration creates a three-tuple where the first element is the result of invoking the `dom_id` function for the given item. So, we end up with tuples in which the first element is something like `"messages-52"`, and so on.
 
-[**/Aside**]
+[**/Deep Dive**]
 
-LiveView uses the DOM id of each stream item to track that item and allow us to edit the item, delete the item, and prepend or append new items to the list. LiveView needs this DOM id to be attached to the HTML element that contains the stream item because stream data is not stored in socket assigns after the initial render. So, LiveView must be able to derive all the information it needs about the item and its position in the stream from the rendered HTML itself.
+LiveView uses the DOM id of each stream item to track that item and allow us to edit and delete the item. LiveView needs this DOM id to be attached to the HTML element that contains the stream item because stream data is not stored in socket assigns after the initial render. So, LiveView must be able to derive all the information it needs about the item and its position in the stream from the rendered HTML itself.
 
-We're attaching the DOM id to each div produced by the iteration in our `:for` directive. Here's another look at that code:
+We attach the DOM id to each div produced by the iteration in our `:for` directive. Here's another look at that code:
 
 ```html
 <div :for={{dom_id, message} <- @messages} id={dom_id}>
@@ -370,15 +374,11 @@ streams: %{
 }
 ```
 
-We'll see LiveView's stream updating capabilities in action in the next section. Next up, we'll build the infinite scroll back feature that loads the previous chat history as the user scrolls the chat window up. Each time the user scrolls up and hits the top of the chat window, we'll prepend an older batch of messages to the stream. You'll see that LiveView handles the work of  how and where to prepend those messages on the page. It does so thanks to our correct rendering of stream items with their DOM ids. All we have to do is tell LiveView that an item should be prepended to the stream, and the framework takes care of the rest. Let's do that now.
+We'll see LiveView's stream updating capabilities in action in the next section. Next up, we'll build the infinite scroll back feature that loads the previous chat history as the user scrolls the chat window up. Each time the user scrolls up and hits the top of the chat window, we'll prepend an older batch of messages to the stream. You'll see that LiveView handles the work of how and where to prepend those messages on the page. All we have to do is tell LiveView that an item should be prepended to the stream, and the framework takes care of the rest. Let's do that now.
 
 ## Prepend Stream Messages for Infinite Scroll Back
 
-Before we can use streams to prepend older messages to the top of the chat window, we need to add the "scroll back" interaction. We'll use a JS hook to send a message to the server when the user scrolls up to the top of the chat window. We'll move through this task quickly in order to keep our main focus on stream functionality.
-
-### Observe Scroll Back with JS Hooks
-
-Add the following div to the `Messages.list_messages/1` function component with the `phx-hook="InfiniteScroll"` attribute attached:
+Our app uses a JS hook to send the `"load_more"` event to the server when the user scrolls up to the top of the chat window. You can check out the hook implementation [here](). All you need to do is add a new div with the hook attached to the messages display, like this:
 
 ```elixir
 def list_messages(assigns) do
@@ -394,41 +394,7 @@ def list_messages(assigns) do
 end
 ```
 
-Now, let's define that hook:
-
-```javascript
-// app.js
-Hooks.InfiniteScroll = {
-  loadMore(entries) {
-    const target = entries[0];
-    if (target.isIntersecting) {
-      this.pushEvent("load_more", {});
-    }
-  },
-  mounted() {
-    this.observer = new IntersectionObserver(
-      (entries) => this.loadMore(entries),
-      {
-        root: null, // window by default
-        rootMargin: "400px",
-        threshold: 0.1,
-      }
-    );
-    this.observer.observe(this.el);
-  },
-  destroyed() {
-    this.observer.unobserve(this.el);
-  }
-};
-```
-
-We won't dig too deeply into this code. The important part to pick out is this line:
-
-```js
-this.pushEvent("load_more", {});
-```
-
-If the JavaScript code observes that the user has scrolled to the top of the messages container, then we push the `"load_more"` event to the server. Now we're ready to handle this event in our live view by prepending items to the stream.
+Now we're ready to handle the `"load_more"` event in our live view by prepending items to the stream.
 
 ### Prepend Stream Items
 
@@ -440,9 +406,9 @@ def handle_event("load_more", _params, socket) do
 end
 ```
 
-Our event handler needs to fetch the previous batch of messages from the database and prepend each of those messages to the stream. We do have a context function available to us for queries for n messages older than a given ID, `Chat.get_previous_n_messages/2`, but we have one problem. Since LiveView does not store stream data in the socket, we have no way of knowing what the ID of the currently loaded oldest message is. So, we can't query for messages _older_ than that one. We need to store awareness of this "oldest message" ID in the socket. Let's fix that now and then we'll return to our event handler.
+Our event handler needs to fetch the previous batch of messages from the database and prepend each of those messages to the stream. We do have a context function available to us to query for n messages older than a given ID: `Chat.get_previous_n_messages/2`, but we have one problem. Since LiveView does not store stream data in the socket, we have no way of knowing what the ID of the currently loaded oldest message is. So, we can't query for messages _older_ than that one. We need to store awareness of this "oldest message" ID in the socket. Let's fix that now and then we'll return to our event handler.
 
-When do we have access to the oldest message in the stream? When we query for the messages to add to the initial stream in our `handle_params` callback. So, at that time we should grab the oldest message and store its ID in socket assigns. Here's our updated `handle_params` function:
+When do we have access to the oldest message in the stream? When we query for the messages to add to the initial stream in our `handle_params/3` callback. At that time, we should grab the oldest message and store its ID in socket assigns. Here's our updated `handle_params` function:
 
 ```elixir
 def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socket) do
@@ -478,7 +444,7 @@ def handle_event("load_more", _params, %{assigns: %{oldest_message_id: id}} = so
 end
 ```
 
-Here, we query for the previous five messages that are older that the current oldest message. Then, we insert this batch of five messages into the stream. Finally, we assign a new oldest message ID.
+We query for the previous five messages that are older than the current oldest message. Then, we insert this batch of five messages into the stream. Finally, we assign a new oldest message ID.
 
 Let's take a closer look at the `stream_batch_insert` function now. This is a hand-rolled function since the streams API doesn't currently support a "batch insert" feature.
 
@@ -519,11 +485,11 @@ streams: %{
 # ...
 ```
 
-Notice that the second element of each tuple in the `:inserts` collection is `0`. This tells LiveView to insert these items at the beginning of the stream on the page. When the page re-renders, it will display these five older messages in the correct order, at the top of the chat messages display. Here's what our feature looks like in action:
+Notice that the second element of each tuple in the `:inserts` collection is `0`. This tells LiveView to insert these items at the _beginning_ of the stream on the page. When the page re-renders, it will display these five older messages in the correct order, at the top of the chat messages display. Here's what our feature looks like in action:
 
 ![](infinite-scrollback video)
 
-Now that we've built out our infinite scroll back feature and seen how streams work to prepend new data, we'll quickly build out our form for a new message, and use streams to append new messages to the end of the messages list.
+Now that we've built out our infinite scroll back feature and seen how streams work to prepend new data, we'll quickly build out the form for a new message, and use streams to append new messages to the _end_ of the messages list.
 
 ## Append a New Message with `stream_insert`
 
@@ -611,28 +577,16 @@ Putting it all together, we should see our form displayed on the page like this:
 
 ![](room show with form)
 
-We're ready to teach our live view to insert the new message once it's created. This is the responsibility of the `ChatLive.Root` live view, since that is the live view that has awareness of the `@streams.messages` assignment. So, the child form component needs to tell the parent live view that a new message has been created. We could do this with the `send` function, since a child live view runs in the same process as the parent. But, we want our chatting application to be real-time--messages sent by a user in a chat room should be seen by all uses in the chat room. For this, we need PubSub.
-
-### Use PubSub for Real-Time Chatting
-
-When the `Chat` context creates a new message with the `Chat.create_message` function, it will broadcast an event over our app's PubSub server:
+We're ready to teach our live view to insert the new message once it's created. This is the responsibility of the `ChatLive.Root` live view, since that is the live view that has awareness of the `@streams.messages` assignment. Luckily for us, our chat feature is already backed by PubSub for real-time capabilities. The []`Chat.create_message/1` function]() broadcasts an event when a new message is created, like this:
 
 ```elixir
-# lib/stream_chat/chat.ex
-def create_message(attrs \\ %{}) do
-  %Message{}
-  |> Message.changeset(attrs)
-  |> Repo.insert()
-  |> publish_message_created()
-end
-
-def publish_message_created({:ok, message} = result) do
-  Endpoint.broadcast("room:#{message.room_id}", "new_message", %{message: message})
-  result
-end
+Endpoint.broadcast(
+  "room:#{message.room_id}",
+  "new_message",
+  %{message: message})
 ```
 
-Now, we need our `ChatLive.Root` live view to subscribe to the correct PubSub topic for the current room. We'll do this in the `handle_params` function that runs when the live action is `:show`:
+We just need to tell our `ChatLive.Root` live view to subscribe to the PubSub topic for the active room. We'll do that in `handle_params/3`:
 
 ```elixir
 def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socket) do
@@ -642,7 +596,7 @@ def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socke
 end
 ```
 
-Now, when a new message is created, any `ChatLive.Root` live view processes for that message's room will receive a PubSub event. The `handle_info` for this event is where we'll insert then new chat message into the stream. Let's do it.
+Now, when a new message is created, any `ChatLive.Root` live view processes for that message's room will receive a PubSub event. The `handle_info/3` for this event is where we'll insert the new chat message into the stream. Let's do it.
 
 ### Append a Stream Item
 
@@ -657,7 +611,7 @@ def insert_new_message(socket, message) do
 end
 ```
 
-This time around, we call `stream_insert` with no additional options. In this case, the resulting LiveStream struct in socket assigns will look something like this:
+This time around, we call `stream_insert/4` with no additional options. In this case, the resulting LiveStream struct in socket assigns will look something like this:
 
 ```elixir
 streams: %{
@@ -680,13 +634,13 @@ streams: %{
 # ...
 ```
 
-Once again, we have a LiveStream struct with the `:inserts` key populated with the list of inserts. This time, we have just one item in the list. The tuple representing that item has a second element of `-1`. This tells LiveView to append the new item to the end of the stream. As a result, the new message will be rendered at the end of the list of messages on the page.
+Once again, we have a LiveStream struct with the `:inserts` key populated with the list of inserts. Now we have just one item in the list. The tuple representing that item has a second element of `-1`. This tells LiveView to append the new item to the end of the stream. As a result, the new message will be rendered at the end of the list of messages on the page.
 
-That's it for our new message feature. Once again, streams did the heavy lifting for us. All we had to do was tell is that a new item needed to appended, and LiveView took care of the rest. Now we're ready to build the edit message feature and take a look at how to update items in a stream. Then, we'll wrap up with our delete message feature.
+That's it for our new message feature. Once again, streams did the heavy lifting for us. All we had to do was tell LiveView that a new item needed to appended. Now we're ready to build the edit message feature and take a look at how to update items in a stream. Then, we'll wrap up with our delete message feature.
 
 ## Update an Existing Message with `stream_insert`
 
-The edit message form lives in the `ChatLive.Message.EditForm` live component, which is contained in a modal that we show or hide based on user interactions. We won't dive into that code here, since we want to keep our attention focused on the streams code we need to write. You can check out the completed code [here]() to take a closer look at the form rendering functionality, which is backed by function components and JS commands.
+The edit message form lives in the `ChatLive.Message.EditForm` live component, which is contained in a modal that we show or hide based on user interactions. We won't dive into the details here, since we want to keep our attention focused on the streams code we need to write. You can check out the completed code [here]() to take a closer look at the form rendering functionality, which is backed by function components and JS commands.
 
 For now, all you need to know is that the edit message form implements an event handler for the `"save"` action. That event handler calls `Chat.update message` which emits an `"updated_message"` event over PubSub just like we did when we created a new message. We'll implement a `handle_info` for this event in the `ChatLive.Root` live view, since that live view is responsible for managing the `@streams.messages` assigns. Let's do that now.
 
@@ -703,7 +657,7 @@ def insert_updated_message(socket, message) do
 end
 ```
 
-Here, we call `stream_insert` yet again, this time with the updated message and the `at: -1` option. Since we're passing a message that the stream is already tracking on the page, LiveView will know to update the existing message item in the stream. The `at: -1` option tells LiveView to update the item at its current stream location, rather than appending it to the end of the list. Now, the page with re-render and display the updated in message in place.
+Here, we call `stream_insert` yet again, this time with the updated message and the `at: -1` option. Since we're passing a message that the stream is already tracking on the page, LiveView will know to update the existing message item in the stream. The `at: -1` option tells LiveView to update the item at its current stream location, rather than appending it to the end of the list. Now, the page will re-render and display the updated in message in place.
 
 Before we wrap up, we need to build out the message delete feature. Let's do that now.
 
@@ -727,7 +681,7 @@ def delete_message(socket, message_id) do
 end
 ```
 
-We query for the message to be deleted, execute a cal to delete that message from the database, and then tell the stream to delete the message its list. The call to `steam_delete` returns a socket with an assigns that looks something like this:
+We query for the message to be deleted, execute a call to delete that message from the database, and then tell the stream to delete the message from its list. The call to `steam_delete` returns a socket with an assigns that looks something like this:
 
 ```elixir
 streams: %{
@@ -743,7 +697,7 @@ streams: %{
 
 Notice that `:inserts` is empty, but `:deletes` contains a list with the DOM id of the item to be deleted. This instructs LiveView to remove the item with that DOM id from the rendered list of `@streams.messages`. If you pass a struct to `stream_delete`, LiveView will compute the DOM id to be deleted. Alternatively, if you don't have access to that struct or don't want to query for it, you can give `stream_delete` a third argument of the DOM id directly, either by re-computing it yourself or invoking the live stream's `dom_id/2` function stored in `@streams.messages.dom_id`.
 
-That's all we need to do to support our delete message functionality. Once we tell LiveView that there is a stream item to delete, the framework yet again takes care of the rest.
+That's all we need to do to support our delete message functionality. Once we tell LiveView that there is a stream item to delete, the framework once again takes care of the rest. It re-renders the page, triggering LiveView JS framework code that removes the specified item from the rendered list of `@streams.messages`.
 
 Okay, we've covered a lot of ground. Let's wrap up.
 
