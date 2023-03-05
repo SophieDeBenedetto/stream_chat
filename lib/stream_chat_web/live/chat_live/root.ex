@@ -14,8 +14,6 @@ defmodule StreamChatWeb.ChatLive.Root do
   end
 
   def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socket) do
-    if connected?(socket), do: Endpoint.subscribe("room:#{id}")
-
     {:noreply,
      socket
      |> assign_active_room(id)}
