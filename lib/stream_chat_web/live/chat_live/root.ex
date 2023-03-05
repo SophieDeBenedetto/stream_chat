@@ -18,67 +18,15 @@ defmodule StreamChatWeb.ChatLive.Root do
 
     {:noreply,
      socket
-     |> assign_active_room(id)
-     |> assign_active_room_messages()
-     |> assign_last_user_message()}
+     |> assign_active_room(id)}
   end
 
   def handle_params(_params, _uri, socket), do: {:noreply, socket}
-
-  def handle_info(%{event: "new_message", payload: %{message: message}}, socket) do
-    {:noreply,
-     socket
-     |> insert_new_message(message)
-     |> assign_last_user_message(message)}
-  end
-
-  def handle_info(%{event: "updated_message", payload: %{message: message}}, socket) do
-    {:noreply,
-     socket
-     |> insert_updated_message(message)
-     |> assign_last_user_message(message)}
-  end
-
-  def handle_event("load_more", _params, socket) do
-    messages = Chat.get_previous_n_messages(socket.assigns.oldest_message_id, 5)
-
-    {:noreply,
-     socket
-     |> stream_batch_insert(:messages, messages, at: 0)
-     |> assign_oldest_message_id(List.last(messages))
-     |> assign_scrolled_to_top("true")}
-  end
 
   def handle_event("unpin_scrollbar_from_top", _params, socket) do
     {:noreply,
      socket
      |> assign_scrolled_to_top("false")}
-  end
-
-  def handle_event("update_message", _params, socket) do
-    {:noreply, socket}
-  end
-
-  def handle_event("delete_message", %{"item_id" => message_id}, socket) do
-    {:noreply, delete_message(socket, message_id)}
-  end
-
-  def insert_new_message(socket, message) do
-    socket
-    |> stream_insert(:messages, Chat.preload_message_sender(message))
-  end
-
-  def insert_updated_message(socket, message) do
-    socket
-    |> stream_insert(:messages, Chat.preload_message_sender(message), at: -1)
-  end
-
-  def assign_active_room_messages(socket) do
-    messages = Chat.last_ten_messages_for(socket.assigns.room.id)
-
-    socket
-    |> stream(:messages, messages)
-    |> assign(:oldest_message_id, List.first(messages).id)
   end
 
   def assign_rooms(socket) do
@@ -97,14 +45,6 @@ defmodule StreamChatWeb.ChatLive.Root do
     assign(socket, :scrolled_to_top, scrolled_to_top)
   end
 
-  def assign_oldest_message_id(socket, message) do
-    assign(socket, :oldest_message_id, message.id)
-  end
-
-  def assign_is_editing_message(socket, is_editing \\ nil) do
-    assign(socket, :is_editing_message, is_editing)
-  end
-
   def assign_last_user_message(%{assigns: %{current_user: current_user}} = socket, message)
       when current_user.id == message.sender_id do
     assign(socket, :message, message)
@@ -120,12 +60,6 @@ defmodule StreamChatWeb.ChatLive.Root do
 
   def assign_last_user_message(%{assigns: %{room: room, current_user: current_user}} = socket) do
     assign(socket, :message, get_last_user_message_for_room(room.id, current_user.id))
-  end
-
-  def delete_message(socket, message_id) do
-    message = Chat.get_message!(message_id)
-    Chat.delete_message(message)
-    stream_delete(socket, :messages, message)
   end
 
   def get_last_user_message_for_room(room_id, current_user_id) do

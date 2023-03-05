@@ -2,7 +2,6 @@
 <div class="p-4 sm:ml-64">
   <Room.show
     :if={@live_action == :show}
-    messages={@streams.messages}
     current_user_id={@current_user.id}
     room={@room}
     scrolled_to_top={@scrolled_to_top}

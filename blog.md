@@ -18,7 +18,7 @@ For this project, we have a basic LiveView application set up with the following
 * A `Message` belongs to a room and a sender. A sender is a user.
 * A `User` has many messages.
 
-We also have a `Chat` context that exposes the CRUD functionality for rooms and messages. All of this backs the main live view of the application, `StreamChatWeb.ChatLive.Root`. This live view is mapped to the `/rooms` and `/rooms/:id` live routes and this is where we'll be building out our stream-backed chatting feature. You can find the starting code for this project [here](https://github.com/SophieDeBenedetto/stream_chat), including a seed file that will get you started with some chat rooms, users, and messages. If you'd like to follow along step-by-step with this post, clone down the repo at the `starting-state` branch. Or, you can check out the completed project [here]().
+We also have a `Chat` context that exposes the CRUD functionality for rooms and messages. All of this backs the main live view of the application, `StreamChatWeb.ChatLive.Root`. This live view is mapped to the `/rooms` and `/rooms/:id` live routes and this is where we'll be building out our stream-backed chatting feature. You can find the starting code for this project [here](https://github.com/SophieDeBenedetto/stream_chat), including a seed file that will get you started with some chat rooms, users, and messages. If you'd like to follow along step-by-step with this post, clone down the repo at the `start` branch. Or, you can check out the completed project [here](https://github.com/SophieDeBenedetto/stream_chat).
 
 Let's assume we've built out the entities described here, leaving us with this basic live view page:
 
