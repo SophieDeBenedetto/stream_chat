@@ -448,7 +448,9 @@ end
 
 We query for the previous five messages that are older than the current oldest message. Then, we insert this batch of five messages into the stream. Finally, we assign a new oldest message ID.
 
-Let's take a closer look at the `stream_batch_insert` function now. This is a hand-rolled function since the streams API doesn't currently support a "batch insert" feature. You'll find it in the `live_view` behaviour implement in our app's `StreamChatWeb` module [here](https://github.com/SophieDeBenedetto/stream_chat/blob/c81a59256c08c03fc5e6a9e7da4c1c364e9e10d7/lib/stream_chat_web.ex#L58-L62):
+Let's take a closer look at the `stream_batch_insert` function now. This is a hand-rolled function since the streams API doesn't currently support a "batch insert" feature. You'll find it in the `live_view` behaviour implement in our app's [`StreamChatWeb` module](https://github.com/SophieDeBenedetto/stream_chat/blob/c81a59256c08c03fc5e6a9e7da4c1c364e9e10d7/lib/stream_chat_web.ex#L58-L62). I've placed it here because I feel that this function should be highly reuseable within the application, and I'd even like to see LiveView streams offer some such functionality in future release.
+
+Let's take a look at the `stream_batch_insert/4` function now:
 
 ```elixir
 # lib/stream_chat_web.ex
@@ -515,7 +517,7 @@ def show(assigns) do
 end
 ```
 
-When that form is submitted, it triggers an event handler implemented in the form live component that calls [`Chat.create_message/1`](https://github.com/SophieDeBenedetto/stream_chat/blob/start/lib/stream_chat/chat.ex#L132-L137).
+When that form is submitted, it triggers an event handler implemented in the form live component that calls [`Chat.create_message/1`](https://github.com/SophieDeBenedetto/stream_chat/blob/start/lib/stream_chat/chat.ex#L132-L137). So, when the user submits the form, a new chat message is created. But that new message isn't added to the page in real-time. The user would have to refresh the page to see the latest message.
 
 We're ready to teach our live view to insert the new message once it's created. This is the responsibility of the `ChatLive.Root` live view, since that is the live view that has awareness of the `@streams.messages` assignment. Luckily for us, our chat feature is already backed by PubSub for real-time capabilities. The `Chat.create_message/1` function broadcasts an event when a new message is created, like [this](https://github.com/SophieDeBenedetto/stream_chat/blob/start/lib/stream_chat/chat.ex#L151-L154):
 
@@ -536,11 +538,14 @@ def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socke
 end
 ```
 
-Now, when a new message is created, any `ChatLive.Root` live view processes for that message's room will receive a PubSub event. The `handle_info/3` for this event is where we'll insert the new chat message into the stream. Let's do it.
+Now, when a new message is created, any `ChatLive.Root` live view processes for that message's room will receive a PubSub event. The `handle_info/3` for this event is where we'll insert the new chat message into the stream. Let's build that now.
 
 ### Append a Stream Item
 
+Add the following `handle_info/3` function to `ChatLive.Root`:
+
 ```elixir
+# lib/stream_chat_web/chat_live/root.ex
 def handle_info(%{event: "new_message", payload: %{message: message}}, socket) do
   {:noreply, insert_new_message(socket, message)}
 end
@@ -580,11 +585,12 @@ That's it for our new message feature. Once again, streams did the heavy lifting
 
 ## Update an Existing Message with `stream_insert`
 
-The edit message form lives in the `ChatLive.Message.EditForm` live component, which is contained in a modal that we show or hide based on user interactions. We won't dive into the details here, since we want to keep our attention focused on the streams code we need to write. You can check out the completed code [here]() to take a closer look at the form rendering functionality, which is backed by function components and JS commands.
+The edit message form lives in the [`ChatLive.Message.EditForm` live component](https://github.com/SophieDeBenedetto/stream_chat/blob/start/lib/stream_chat_web/live/chat_live/message/edit_form.ex), which is contained in a modal that we show or hide based on user interactions. This form behaves similarly to the form for a new message. It's `"save"` event handler calls the `Chat.update_message` context function, which emits an `"updated_message"` event over PubSub.
 
-For now, all you need to know is that the edit message form implements an event handler for the `"save"` action. That event handler calls `Chat.update message` which emits an `"updated_message"` event over PubSub just like we did when we created a new message. We'll implement a `handle_info` for this event in the `ChatLive.Root` live view, since that live view is responsible for managing the `@streams.messages` assigns. Let's do that now.
+We'll implement a `handle_info/3` for this event in the `ChatLive.Root` live view, since that live view is responsible for managing the `@streams.messages` assigns. Let's do that now.
 
 ```elixir
+# lib/stream_chat_web/chat_live/root.ex
 def handle_info(%{event: "updated_message", payload: %{message: message}}, socket) do
   {:noreply,
     socket
@@ -610,6 +616,7 @@ We render a delete icon for each message when the message is hovered over, like 
 When the user clicks that button, we send a `"delete_message"` event to the live view. Let's handle that event now by deleting the message from the stream.
 
 ```elixir
+# lib/stream_chat_web/chat_live/root.ex
 def handle_event("delete_message", %{"item_id" => message_id}, socket) do
   {:noreply, delete_message(socket, message_id)}
 end
@@ -643,16 +650,6 @@ Okay, we've covered a lot of ground. Let's wrap up.
 
 ## Wrap Up
 
-* Benefits of streams
-* recap of how easy they are to work with
-* recap of some of the "under the hood" glances we took to drive home that we understand how they work and they're not mysterious anymore
-* highlight that we omitted a lot of functionality, especially JS functionality. Dive deeper into the full feature set in the codebase.
-* Where will streams go next? I want a batch_insert.
+LiveView's new streams feature packs a powerful punch, allowing you to build manage large datasets client-side, while writing very little custom code. True to the declarative nature of LiveView, the streams API asks you to provide LiveView with some basic instructions regarding _what_ data to manage in the stream and what to do with that data based on certain user interactions. You don't have to tell LiveView _how_ to render stream data on the page or how to prepend, append, update, or delete items from that data collection.
 
-Code TODO:
-* clean starting branch for this tutorial -> starting state should have edit form and delete buttons on hover, but not handle_info to do stream insert/delete. Should have infinite scroll hook but not div to attach it. Should have create/update context functions with pubsub, but not handle infos.
-* complete branch for this tutorial without scroll down JS bells and whistles, but with infinite scroll back, modal JS, hover JS. -> maybe not, maybe just fully completed branch.
-* complete branch _with_ JS bells and whistles
-* Link to code appropriately throughout
-* Add images and videos
-* Add demo at the top
+Our interactive, real-time chatting feature successfully uses streams to manage chat messages fully on the client, and we had to write only a few lines of streams-specific code to make it happen. Client-side data management with streams opens up a whole new set of possibilities for LiveView developers to efficiently manage large data collections, and I'm excited to see what you build with it next.
