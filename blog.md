@@ -24,7 +24,7 @@ Let's assume we've built out the entities described here, leaving us with this b
 
 ![](rooms)
 
-A user can navigate to `/rooms/:id` and see the sidebar that lists the available chatrooms, with the current chatroom highlighted. But, we're not displaying the messages for that room yet, nor do we have a form through which the user can submit a new message. This is where our stream functionality comes in so this is where we'll pick up with our coding. Let's get started.
+A user can navigate to `/rooms/:id` and see the sidebar that lists the available chatrooms, with the current chatroom highlighted. But we're not displaying the messages for that room yet. And, while we have the form for a new message, the page doesn't yet update to reflect that new message in real-time. We'll use streams to implement both of these features. Let's get started.
 
 ## List Messages with Streams
 
@@ -710,8 +710,8 @@ Okay, we've covered a lot of ground. Let's wrap up.
 * Where will streams go next? I want a batch_insert.
 
 Code TODO:
-* clean starting branch for this tutorial -> starting state should have edit form and delete buttons on hover, but not handle_info to do stream insert/delete.
-* complete branch for this tutorial without scroll down JS bells and whistles, but with infinite scroll back, modal JS, hover JS.
+* clean starting branch for this tutorial -> starting state should have edit form and delete buttons on hover, but not handle_info to do stream insert/delete. Should have infinite scroll hook but not div to attach it. Should have create/update context functions with pubsub, but not handle infos.
+* complete branch for this tutorial without scroll down JS bells and whistles, but with infinite scroll back, modal JS, hover JS. -> maybe not, maybe just fully completed branch.
 * complete branch _with_ JS bells and whistles
 * Link to code appropriately throughout
 * Add images and videos
