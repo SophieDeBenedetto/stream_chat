@@ -18,13 +18,13 @@ For this project, we have a basic LiveView application set up with the following
 * A `Message` belongs to a room and a sender. A sender is a user.
 * A `User` has many messages.
 
-We also have a `Chat` context that exposes the CRUD functionality for rooms and messages. All of this backs the main live view of the application, `StreamChatWeb.ChatLive.Root`. This live view is mapped to the `/rooms` and `/rooms/:id` live routes and this is where we'll be building out our stream-backed chatting feature. You can find the starting code for this project [here](https://github.com/SophieDeBenedetto/stream_chat), including a seed file that will get you started with some chat rooms, users, and messages. If you'd like to follow along step-by-step with this post, clone down the repo at the `starting-state` branch. Or, you can check out the completed project [here]().
+We also have a `Chat` context that exposes the CRUD functionality for rooms and messages. All of this backs the main live view of the application, `StreamChatWeb.ChatLive.Root`. This live view is mapped to the `/rooms` and `/rooms/:id` live routes and this is where we'll be building our stream-backed chatting feature. You can find the starting code for this blog post [here](https://github.com/SophieDeBenedetto/stream_chat/tree/start), including a seed file that will get you started with some chat rooms, users, and messages. If you'd like to follow along step-by-step with this post, clone down the repo at the `start` branch. Or, you can check out the completed project on the `main` branch [here](https://github.com/SophieDeBenedetto/stream_chat).
 
-Let's assume we've built out the entities described here, leaving us with this basic live view page:
+The starting state for our code-along leaves us with a UI that looks like this:
 
-![](rooms)
+![](room-without-messages)
 
-A user can navigate to `/rooms/:id` and see the sidebar that lists the available chatrooms, with the current chatroom highlighted. But we're not displaying the messages for that room yet. And, while we have the form for a new message, the page doesn't yet update to reflect that new message in real-time. We'll use streams to implement both of these features. Let's get started.
+A user can navigate to `/rooms/:id` and see the sidebar that lists the available chatrooms, with the current chatroom highlighted. But we're not displaying the messages for that room yet. And, while we have the form for a new message, the page doesn't yet update to reflect that new message in real-time. We'll use streams to implement both of these features, along with the "edit message" and "delete" message functionality. Let's get started.
 
 ## List Messages with Streams
 
@@ -39,12 +39,8 @@ We'll use a stream to store the most recent ten messages for the room and we'll 
 In the `router.ex` file we have the following route definitions:
 
 ```elixir
-live_session :rooms,
-  on_mount: [{StreamChatWeb.UserAuth, :ensure_authenticated}],
-  layout: {StreamChatWeb.Layouts, :rooms} do
-  live "/rooms", ChatLive.Root, :index
-  live "/rooms/:id", ChatLive.Root, :show
-end
+live "/rooms", ChatLive.Root, :index
+live "/rooms/:id", ChatLive.Root, :show
 ```
 
 Note that both the `/rooms` and `/rooms/:id` routes map to the same live view, `ChatLive.Root`. The `/rooms/:id` route is defined with a live action of `:show` in the socket assigns. So, we'll define a `handle_params/3` callback that will run when the live action assignment is set to `:show`. We'll use this callback to fetch the list of messages for the current room and store them in the stream, like this:

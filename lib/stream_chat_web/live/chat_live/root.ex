@@ -55,10 +55,6 @@ defmodule StreamChatWeb.ChatLive.Root do
      |> assign_scrolled_to_top("false")}
   end
 
-  def handle_event("update_message", _params, socket) do
-    {:noreply, socket}
-  end
-
   def handle_event("delete_message", %{"item_id" => message_id}, socket) do
     {:noreply, delete_message(socket, message_id)}
   end
