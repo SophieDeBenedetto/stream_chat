@@ -43,7 +43,7 @@ live "/rooms", ChatLive.Root, :index
 live "/rooms/:id", ChatLive.Root, :show
 ```
 
-Note that both the `/rooms` and `/rooms/:id` routes map to the same live view, `ChatLive.Root`. The `/rooms/:id` route is defined with a live action of `:show` in the socket assigns. So, we'll define a `handle_params/3` callback that will run when the live action assignment is set to `:show`. We'll use this callback to fetch the list of messages for the current room and store them in the stream, like this:
+Note that both the `/rooms` and `/rooms/:id` routes map to the same live view, `ChatLive.Root`. The `/rooms/:id` route is defined with a live action of `:show` in the socket assigns. The `ChatLive.Root` live view already implements a `handle_params/3` callback that queries for the room with the room ID from params and stores the active room in socket assigns. We'll add some additional code to this callback to fetch the list of messages for the current room and store them in the stream, like this:
 
 ```elixir
 def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socket) do
@@ -66,7 +66,7 @@ end
 
 First, we use a single-purpose reducer function to assign the room with the given ID to the socket. Then, we pass that updated socket to another reducer function, `assign_active_room_messages/1`. That reducer pulls the room out of socket assigns and uses it to fetch the last ten messages. Finally, we create a stream for `:messages` with a value of this list of messages.
 
-Let's dive a bit deeper into streams and take a closer look at what happens when we call `stream(socket, :messages, Chat.last_ten_messages_for_room(room.id))`. Go ahead and pipe the updated socket into an `IO.inspect` like this:
+Let's take a closer look at what happens when we call `stream(socket, :messages, Chat.last_ten_messages_for_room(room.id))`. Go ahead and pipe the updated socket into an `IO.inspect` like this:
 
 ```elixir
 def assign_active_room_messages(%{assigns: %{room: room}} = socket) do
@@ -151,11 +151,13 @@ inserts: [
 # ...
 ```
 
-The call to `streams/3` adds a `:streams` key to socket assigns, which in turn points to a map with a `:messages` key. The `streams.messages` assignment contains a `Phoenix.LiveView.LiveStream` struct that holds all of the info the LiveView client-side code needs to display your stream data on the page. Notice that the struct has an `:inserts` key that contains the list of messages we're inserting into the initial stream. It also contains a `:deletes` key that is currently empty. All of this data is made available in our template as the `@streams.messages` assignment, and we'll use it now to display the message list. Once that initial render occurs, the list of messages will no longer be present in the socket under `streams.messages.inserts`. It will be available only to the LiveView client-side code via the HTML on the page. Let's do that rendering now.
+The call to `streams/4` adds a `:streams` key to socket assigns, which in turn points to a map with a `:messages` key. The `streams.messages` assignment contains a `Phoenix.LiveView.LiveStream` struct that holds all of the info the LiveView client-side code needs to display your stream data on the page. Notice that the struct has an `:inserts` key that contains the list of messages we're inserting into the initial stream. It also contains a `:deletes` key that is currently empty. All of this data is made available in our template as the `@streams.messages` assignment.
+
+Once that initial render occurs, the list of messages will no longer be present in the socket under `streams.messages.inserts`. It will be available only to the LiveView client-side code via the HTML on the page. Let's do that rendering now.
 
 ### Render Stream Data
 
-We'll use a function component, `Room.show/1`, to render the messages list from the `root.html.heex` template if the `@live_action` assignment is set to `:show`. We'll pass in the messages from the stream when we do so, like this:
+We'll use a function component, `Room.show/1`, to render the messages list from the `root.html.heex` template _if_ the `@live_action` assignment is set to `:show`. We'll pass in the messages from the stream when we do so, like this:
 
 ```elixir
 # lib/stream_chat_web/live/chat_live/root.html.heex
@@ -166,7 +168,7 @@ We'll use a function component, `Room.show/1`, to render the messages list from 
   room={@room} />
 ```
 
-The `Room.show/1` function component will eventually render both the list of messages _and_ a form for a new message. For now, it just renders the messages list, as shown here:
+The `Room.show/1` function component will render both the list of messages _and_ a form for a new message. Let's add in that messages list rendering like this:
 
 ```elixir
 defmodule StreamChatWeb.ChatLive.Room do
@@ -177,14 +179,14 @@ defmodule StreamChatWeb.ChatLive.Room do
     ~H"""
     <div id={"room-#{@room.id}"}>
       <Messages.list_messages messages={@messages} />
-      <!-- new message form coming soon! -->
+      <!-- ... form for a new message -->
     </div>
     """
   end
 end
 ```
 
-This function component calls an another function component, `Messages.list/1`. This nice, layered UI allows us to wrap up the different concepts on our page into appropriately named functions. Each of these functions can be relatively single-purpose, keeping our code short and sweet and ensuring we have a nice clean location to place our stream rendering code. Let's take a look at that stream rendering code in `Messages.list/1` now.
+This function component calls an another function component, `Messages.list/1`. This nice, layered UI allows us to wrap up the different concepts on our page into appropriately named functions. Each of these functions can be relatively single-purpose, keeping our code short and sweet and ensuring we have a nice clean location to place our stream rendering code. Let's take a look at the stream rendering code in `Messages.list/1` now.
 
 ```elixir
 defmodule StreamChatWeb.ChatLive.Messages do
