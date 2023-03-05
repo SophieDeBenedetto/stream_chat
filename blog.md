@@ -376,9 +376,10 @@ We'll see LiveView's stream updating capabilities in action in the next section.
 
 ## Prepend Stream Messages for Infinite Scroll Back
 
-Our app uses a JS hook to send the `"load_more"` event to the server when the user scrolls up to the top of the chat window. You can check out the hook implementation [here](). All you need to do is add a new div with the hook attached to the messages display, like this:
+Our app uses a JS hook to send the `"load_more"` event to the server when the user scrolls up to the top of the chat window. You can check out the hook implementation [here](https://github.com/SophieDeBenedetto/stream_chat/blob/start/assets/js/infiniteScroll.js). We won't get into the details of this JavaScript now though. Just note [this](https://github.com/SophieDeBenedetto/stream_chat/blob/start/assets/js/infiniteScroll.js#L5) line that pushes the `"load_more"` event. Now all you need to do is add a new div with the hook attached to the messages display, like this:
 
 ```elixir
+# lib/stream_chat_web/live/chat_live/messages.ex
 def list_messages(assigns) do
   ~H"""
   <div id="messages" phx-update="stream">
@@ -399,16 +400,18 @@ Now we're ready to handle the `"load_more"` event in our live view by prepending
 In the `ChatLive.Root` live view, we need an event handler to match the `"load_more"` event. Go ahead and implement the function definition like this:
 
 ```elixir
+# lib/stream_chat_web/live/chat_live/root.ex
 def handle_event("load_more", _params, socket) do
   # coming soon!
 end
 ```
 
-Our event handler needs to fetch the previous batch of messages from the database and prepend each of those messages to the stream. We do have a context function available to us to query for n messages older than a given ID: `Chat.get_previous_n_messages/2`, but we have one problem. Since LiveView does not store stream data in the socket, we have no way of knowing what the ID of the currently loaded oldest message is. So, we can't query for messages _older_ than that one. We need to store awareness of this "oldest message" ID in the socket. Let's fix that now and then we'll return to our event handler.
+Our event handler needs to fetch the previous batch of messages from the database and prepend each of those messages to the stream. We do have a context function available to us to query for n messages older than a given ID: [`Chat.get_previous_n_messages/2`](https://github.com/SophieDeBenedetto/stream_chat/blob/start/lib/stream_chat/chat.ex#L165-L169), but we have one problem. Since LiveView does not store stream data in the socket, we have no way of knowing what the ID of the currently loaded oldest message is. So, we can't query for messages _older_ than that one. We need to store awareness of this "oldest message" ID in the socket. Let's fix that now and then we'll return to our event handler.
 
 When do we have access to the oldest message in the stream? When we query for the messages to add to the initial stream in our `handle_params/3` callback. At that time, we should grab the oldest message and store its ID in socket assigns. Here's our updated `handle_params` function:
 
 ```elixir
+# lib/stream_chat_web/live/chat_live/root.ex
 def handle_params(%{"id" => id}, _uri, %{assigns: %{live_action: :show}} = socket) do
   messages = Chat.last_ten_messages_for(socket.assigns.room.id)
   {:noreply,
@@ -432,6 +435,7 @@ end
 Now we can use the oldest message id in socket assigns to query for the previous batch of messages. Let's do that in our event handler now.
 
 ```elixir
+# lib/stream_chat_web/live/chat_live/root.ex
 def handle_event("load_more", _params, %{assigns: %{oldest_message_id: id}} = socket) do
   messages = Chat.get_previous_n_messages(id, 5)
 
@@ -444,9 +448,10 @@ end
 
 We query for the previous five messages that are older than the current oldest message. Then, we insert this batch of five messages into the stream. Finally, we assign a new oldest message ID.
 
-Let's take a closer look at the `stream_batch_insert` function now. This is a hand-rolled function since the streams API doesn't currently support a "batch insert" feature.
+Let's take a closer look at the `stream_batch_insert` function now. This is a hand-rolled function since the streams API doesn't currently support a "batch insert" feature. You'll find it in the `live_view` behaviour implement in our app's `StreamChatWeb` module [here](https://github.com/SophieDeBenedetto/stream_chat/blob/c81a59256c08c03fc5e6a9e7da4c1c364e9e10d7/lib/stream_chat_web.ex#L58-L62):
 
 ```elixir
+# lib/stream_chat_web.ex
 def stream_batch_insert(socket, key, items, opts \\ %{}) do
   items
   |> Enum.reduce(socket, fn item, socket ->
@@ -487,95 +492,32 @@ Notice that the second element of each tuple in the `:inserts` collection is `0`
 
 ![](infinite-scrollback video)
 
-Now that we've built out our infinite scroll back feature and seen how streams work to prepend new data, we'll quickly build out the form for a new message, and use streams to append new messages to the _end_ of the messages list.
+Now that we've built out our infinite scroll back feature and seen how streams work to prepend new data, we'll take a look at the form for a new message, and use streams to append new messages to the _end_ of the messages list.
 
 ## Append a New Message with `stream_insert`
 
-We'll make short work of our "new message" feature. First, we'll add a form for a new message to the bottom of the chat room UI. We'll implement an event handler for that form that uses `stream_insert` to append the new message to the end of the stream so that it shows up at the bottom of the chat window. Let's get started.
-
-### The New Message Form
-
-Create a live component to render the new message form and handle its submission:
+We're already rendering the [form for a new message](https://github.com/SophieDeBenedetto/stream_chat/blob/start/lib/stream_chat_web/live/chat_live/message/form.ex) in the `Room.show/1` function component like this:
 
 ```elixir
-# lib/stream_chat_web/chat_live/message/forme.x
-defmodule StreamChatWeb.ChatLive.Message.Form do
-  use StreamChatWeb, :live_component
-  import StreamChatWeb.CoreComponents
-  alias StreamChat.Chat
-  alias StreamChat.Chat.Message
-
-  def update(assigns, socket) do
-    {:ok,
-     socket
-     |> assign(assigns)
-     |> assign_changeset}
-  end
-
-  def assign_changeset(socket) do
-    assign(socket, :changeset, Chat.change_message(%Message{}))
-  end
-
-  def render(assigns) do
-    ~H"""
-    <div>
-      <.simple_form
-        :let={f}
-        for={@changeset}
-        phx-submit="save"
-        phx-target={@myself}
-      >
-        <.input field={{f, :content}} />
-        <:actions>
-          <.button>send</.button>
-        </:actions>
-      </.simple_form>
-    </div>
-    """
-  end
-
-  def handle_event("save", %{"message" => %{"content" => content}}, socket) do
-    Chat.create_message(%{
-      content: content,
-      room_id: socket.assigns.room_id,
-      sender_id: socket.assigns.sender_id
-    })
-
-    {:noreply, assign_changeset(socket)}
-  end
+# lib/stream_chat_web/live/chat_live/room.ex
+def show(assigns) do
+  ~H"""
+  <div id={"room-#{@room.id}"}>
+    <Messages.list_messages messages={@messages} />
+    <.live_component
+      module={Message.Form}
+      room_id={@room.id}
+      sender_id={@current_user_id}
+      id={"room-#{@room.id}-message-form"}
+    />
+  </div>
+  """
 end
 ```
 
-Our component will be called with an assigns that contains the room ID and sender ID. It will establish a changeset for a new message and render the form for that changeset. Then, it implements an event handler for the `"save"` event that creates the new message with the content from the form and the sender and room ID from socket assigns.
+When that form is submitted, it triggers an event handler implemented in the form live component that calls [`Chat.create_message/1`](https://github.com/SophieDeBenedetto/stream_chat/blob/start/lib/stream_chat/chat.ex#L132-L137).
 
-Let's call on our message form in the `Room.show/1` function component, right under the messages list:
-
-```elixir
-defmodule StreamChatWeb.ChatLive.Room do
-  use Phoenix.Component
-  alias StreamChatWeb.ChatLive.{Messages, Message}
-
-  def show(assigns) do
-    ~H"""
-    <div id={"room-#{@room.id}"}>
-      <Messages.list_messages messages={@messages} />
-      <.live_component
-        module={Message.Form}
-        room_id={@room.id}
-        sender_id={@current_user_id}
-        id={"room-#{@room.id}-message-form"}
-      />
-    </div>
-    """
-  end
-end
-```
-
-Putting it all together, we should see our form displayed on the page like this:
-
-![](room show with form)
-
-We're ready to teach our live view to insert the new message once it's created. This is the responsibility of the `ChatLive.Root` live view, since that is the live view that has awareness of the `@streams.messages` assignment. Luckily for us, our chat feature is already backed by PubSub for real-time capabilities. The []`Chat.create_message/1` function]() broadcasts an event when a new message is created, like this:
+We're ready to teach our live view to insert the new message once it's created. This is the responsibility of the `ChatLive.Root` live view, since that is the live view that has awareness of the `@streams.messages` assignment. Luckily for us, our chat feature is already backed by PubSub for real-time capabilities. The `Chat.create_message/1` function broadcasts an event when a new message is created, like [this](https://github.com/SophieDeBenedetto/stream_chat/blob/start/lib/stream_chat/chat.ex#L151-L154):
 
 ```elixir
 Endpoint.broadcast(
