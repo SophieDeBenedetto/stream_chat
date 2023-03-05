@@ -22,7 +22,7 @@ We also have a `Chat` context that exposes the CRUD functionality for rooms and 
 
 Let's assume we've built out the entities described here, leaving us with this basic live view page:
 
-![](rooms)
+![](room-without-messages)
 
 A user can navigate to `/rooms/:id` and see the sidebar that lists the available chatrooms, with the current chatroom highlighted. But we're not displaying the messages for that room yet. And, while we have the form for a new message, the page doesn't yet update to reflect that new message in real-time. We'll use streams to implement both of these features. Let's get started.
 
