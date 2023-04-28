@@ -53,7 +53,8 @@ defmodule StreamChat.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:faker, "~> 0.17", only: [:dev, :test]},
-      {:timex, "~> 3.0"}
+      {:timex, "~> 3.0"},
+      {:appsignal, "~> 2.0"}
     ]
   end
 
