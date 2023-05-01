@@ -113,3 +113,31 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 end
+
+config :logger, level: :info
+
+config :logger, :backends, [
+  :console,
+  {StreamChat.Logger.Backend,
+   [
+     format: "logfmt",
+     application_config: [
+       phoenix: [
+         level_lower_than: :fatal
+       ]
+     ]
+   ]}
+]
+
+config :logger,
+  compile_time_purge_matching: [
+    [application: :phoenix, level_lower_than: :error]
+  ]
+
+config :logger, :console, format: {LogfmtEx, :format}
+
+config :logfmt_ex, :opts,
+  message_key: "Body",
+  timestamp_key: "Timestamp",
+  timestamp_format: :iso8601,
+  level_key: "SeverityText"

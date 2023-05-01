@@ -66,8 +66,13 @@ config :stream_chat, StreamChatWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :stream_chat, dev_routes: true
 
-# Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
+config :logger, :console, format: {LogfmtEx, :format}
+
+config :logfmt_ex, :opts,
+  message_key: "Body",
+  timestamp_key: "Timestamp",
+  timestamp_format: :iso8601,
+  level_key: "SeverityText"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

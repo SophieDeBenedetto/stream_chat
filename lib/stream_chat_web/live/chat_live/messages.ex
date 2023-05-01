@@ -41,7 +41,11 @@ defmodule StreamChatWeb.ChatLive.Messages do
         <dt class="w-1/8 flex-none text-[0.9rem] leading-8 text-zinc-500" style="font-weight: 900">
           <%= @message.sender.email %>
           <span style="font-weight: 300">[<%= @message.inserted_at %>]</span>
-          <.delete_icon id={"message-#{@message.id}-buttons"} phx_click="delete_message" value={@message.id} />
+          <.delete_icon
+            id={"message-#{@message.id}-buttons"}
+            phx_click="delete_message"
+            value={@message.id}
+          />
         </dt>
       </div>
     </dl>
