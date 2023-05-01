@@ -7,6 +7,9 @@ defmodule StreamChat.Application do
 
   @impl true
   def start(_type, _args) do
+    # <--- attach the LiveView Telemetry handlers
+    Appsignal.Phoenix.LiveView.attach()
+
     children = [
       # Start the Telemetry supervisor
       StreamChatWeb.Telemetry,

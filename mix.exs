@@ -55,6 +55,7 @@ defmodule StreamChat.MixProject do
       {:faker, "~> 0.17", only: [:dev, :test]},
       {:timex, "~> 3.0"},
       {:appsignal, "~> 2.0"},
+      {:appsignal_phoenix, "~> 2.0"},
       {:logfmt_ex, "~> 0.4"}
     ]
   end
