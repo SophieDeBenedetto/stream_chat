@@ -66,13 +66,14 @@ config :stream_chat, StreamChatWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :stream_chat, dev_routes: true
 
-config :logger, :console, format: {LogfmtEx, :format}
+# config :logger, :console,
+#   format: "$time $metadata[$level] $message\n"
 
-config :logfmt_ex, :opts,
-  message_key: "Body",
-  timestamp_key: "Timestamp",
-  timestamp_format: :iso8601,
-  level_key: "SeverityText"
+# config :logfmt_ex, :opts,
+#   message_key: "Body",
+#   timestamp_key: "Timestamp",
+#   timestamp_format: :iso8601,
+#   level_key: "SeverityText"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

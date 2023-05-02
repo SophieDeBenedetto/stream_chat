@@ -116,6 +116,8 @@ end
 
 config :logger, level: :info
 
+config :logger, :console, format: {LogfmtEx, :format}
+
 config :logger, :backends, [
   :console,
   {StreamChat.Logger.Backend,
@@ -124,6 +126,9 @@ config :logger, :backends, [
      application_config: [
        phoenix: [
          level_lower_than: :fatal
+       ],
+       default: [
+        level_lower_than: :info
        ]
      ]
    ]}
@@ -133,11 +138,3 @@ config :logger,
   compile_time_purge_matching: [
     [application: :phoenix, level_lower_than: :error]
   ]
-
-config :logger, :console, format: {LogfmtEx, :format}
-
-config :logfmt_ex, :opts,
-  message_key: "Body",
-  timestamp_key: "Timestamp",
-  timestamp_format: :iso8601,
-  level_key: "SeverityText"
