@@ -45,7 +45,7 @@ defmodule StreamChatWeb.ChatLive.Root do
     {:noreply,
      socket
      |> stream_batch_insert(:messages, messages, at: 0)
-     |> assign_oldest_message_id(List.last(messages))
+     |> assign_oldest_message_id(List.first(messages))
      |> assign_scrolled_to_top("true")}
   end
 
