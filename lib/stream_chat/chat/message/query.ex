@@ -36,6 +36,7 @@ defmodule StreamChat.Chat.Message.Query do
     |> where([m], m.id < ^id)
     |> order_by([m], {:desc, m.inserted_at})
     |> limit(^n)
+    |> subquery()
     |> order_by([m], {:asc, m.inserted_at})
   end
 end

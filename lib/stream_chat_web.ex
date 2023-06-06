@@ -56,6 +56,13 @@ defmodule StreamChatWeb do
         layout: {StreamChatWeb.Layouts, :app}
 
       def stream_batch_insert(socket, key, items, opts \\ %{}) do
+        items =
+          if opts[:at] == 0 do
+            Enum.reverse(items)
+          else
+            items
+          end
+
         items
         |> Enum.reduce(socket, fn item, socket ->
           stream_insert(socket, key, item, opts)
