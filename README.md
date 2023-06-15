@@ -1,6 +1,6 @@
 # StreamChat
 
-A Phoenix LiveView application that uses LiveStream to implement a real-time chatting feature. This app is a companion to my blog post on this topic, which you can find [here](#TBD).
+A Phoenix LiveView application that uses LiveStream to implement a real-time chatting feature. This app is a companion to my blog post on this topic, which you can find [here](https://fly.io/phoenix-files/building-a-chat-app-with-liveview-streams/).
 
 The completed code can be found on the main branch. To follow along with the blog post, checkout the `start` branch.
 
